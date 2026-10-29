@@ -1,0 +1,33 @@
+name: Build VST3
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get JUCE
+        run: git clone --depth 1 --branch 8.0.6 https://github.com/juce-framework/JUCE.git JUCE
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+
+      - name: Build VST3
+        run: cmake --build build --config Release --target SwoopFilter_VST3
+
+      - name: Build AU (macOS only)
+        if: runner.os == 'macOS'
+        run: cmake --build build --config Release --target SwoopFilter_AU
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SwoopFilter-VST3-${{ matrix.os }}
+          path: build/SwoopFilter_artefacts
